@@ -73,10 +73,11 @@ class UserController extends Controller
             Log::info('Nom modifié : ' . $validated['last_name']);
         }
     
-        if (!empty($validated['bio'])) {
-            $user->bio = $validated['bio'];
-            Log::info('Bio modifiée : ' . $validated['bio']);
+        if (array_key_exists('bio', $validated)) {
+            $user->bio = $validated['bio']; // Accepte "" et null
+            Log::info('Bio mise à jour : ' . ($validated['bio'] ?? 'Vide'));
         }
+        
     
         // Gestion de l'image de profil
         if ($request->hasFile('profile_image')) {
@@ -103,7 +104,8 @@ class UserController extends Controller
                 return response()->json(['error' => 'Image invalide.'], 422);
             }
         }
-    
+        
+        $user->bio = $request->input('bio', '');
         // Sauvegarde des modifications
         $user->save();
     

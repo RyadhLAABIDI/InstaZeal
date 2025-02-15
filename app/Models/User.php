@@ -6,11 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes; // Ajout de SoftDeletes
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes; // Ajout de SoftDeletes
+    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'first_name',
@@ -19,8 +19,8 @@ class User extends Authenticatable
         'password',
         'date_of_birth',
         'gender',
-        'bio',            // Ajout du champ bio
-        'profile_image',  // Ajout du champ pour l'image de profil
+        'bio',
+        'profile_image',
     ];
 
     protected $hidden = [
@@ -33,6 +33,37 @@ class User extends Authenticatable
         'date_of_birth' => 'date',
     ];
 
-    // Optionnel: Tu peux personnaliser le nom de la colonne "deleted_at" si tu le souhaites
     protected $dates = ['deleted_at'];
+
+    /**
+     * Un utilisateur peut avoir plusieurs posts.
+     */
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    /**
+     * Un utilisateur peut aimer plusieurs posts.
+     */
+    public function likes()
+    {
+        return $this->hasMany(Like::class);
+    }
+
+    /**
+     * Un utilisateur peut commenter plusieurs posts.
+     */
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    /**
+     * Un utilisateur peut partager plusieurs posts.
+     */
+    public function shares()
+    {
+        return $this->hasMany(Share::class);
+    }
 }
