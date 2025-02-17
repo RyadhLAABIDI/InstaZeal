@@ -16,7 +16,11 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Lien avec l'utilisateur qui a commenté
             $table->foreignId('post_id')->constrained('posts')->onDelete('cascade'); // Lien avec le post commenté
             $table->text('content'); // Contenu du commentaire
+            $table->foreignId('parent_id')->nullable()->constrained('comments')->onDelete('cascade'); // Lien avec un commentaire parent (si réponse)
             $table->timestamps();
+
+            // Ajouter un index sur parent_id pour améliorer les performances des requêtes liées aux réponses
+            $table->index('parent_id');
         });
     }
 

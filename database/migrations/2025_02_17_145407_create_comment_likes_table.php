@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('likes', function (Blueprint $table) {
+        Schema::create('comment_likes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // Lien avec l'utilisateur
-            $table->foreignId('post_id')->constrained()->onDelete('cascade'); // Lien avec le post
+            $table->foreignId('comment_id')->constrained()->onDelete('cascade'); // Lien avec le commentaire
             $table->timestamps();
 
-            // Ajouter les index sur 'user_id' et 'post_id'
-            $table->index('user_id');  // Index sur 'user_id'
-            $table->index('post_id');  // Index sur 'post_id'
+            // Ajouter les index pour optimiser les requêtes
+            $table->index('user_id');     // Index sur 'user_id'
+            $table->index('comment_id');  // Index sur 'comment_id'
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('likes');
+        Schema::dropIfExists('comment_likes');
     }
 };
