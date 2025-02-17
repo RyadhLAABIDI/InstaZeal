@@ -13,22 +13,19 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name'); // Champ pour le prénom
-            $table->string('last_name');  // Champ pour le nom de famille
+            $table->string('first_name'); // Prénom
+            $table->string('last_name');  // Nom
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->date('date_of_birth'); // Champ pour la date de naissance
-            $table->enum('gender', ['male', 'female']); // Champ pour le sexe
+            $table->date('date_of_birth'); // Date de naissance
+            $table->enum('gender', ['male', 'female']); // Sexe
+            $table->text('bio')->nullable();   // Bio de l'utilisateur
+            $table->string('profile_image')->nullable(); // Image de profil
+            $table->boolean('is_private')->default(false); // ⚡ Nouveau champ : compte privé ou public
             $table->rememberToken();
-            
-            // Ajout des nouveaux champs
-            $table->text('bio')->nullable();   // Champ pour la bio de l'utilisateur
-            $table->string('profile_image')->nullable(); // Change 'image' en 'profile_image'
-
-
             $table->timestamps();
-            $table->softDeletes(); // Ajoute la colonne 'deleted_at' pour SoftDeletes
+            $table->softDeletes(); // Suppression douce
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

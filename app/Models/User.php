@@ -21,6 +21,7 @@ class User extends Authenticatable
         'gender',
         'bio',
         'profile_image',
+        'is_private',
     ];
 
     protected $hidden = [
@@ -31,6 +32,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'date_of_birth' => 'date',
+        'is_private' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];
@@ -65,5 +67,45 @@ class User extends Authenticatable
     public function shares()
     {
         return $this->hasMany(Share::class);
+    }
+
+    /**
+     * Un utilisateur peut avoir plusieurs abonnés (followers).
+     */
+    public function followers()
+    {
+        return $this->hasMany(Follow::class, 'followed_id')->where('status', 'accepted');
+    }
+
+    /**
+     * Un utilisateur peut avoir plusieurs demandes d’abonnement en attente.
+     */
+    public function pendingFollowers()
+    {
+        return $this->hasMany(Follow::class, 'followed_id')->where('status', 'pending');
+    }
+
+    /**
+     * Un utilisateur peut suivre plusieurs autres utilisateurs.
+     */
+    public function following()
+    {
+        return $this->hasMany(Follow::class, 'follower_id')->where('status', 'accepted');
+    }
+
+    /**
+     * Vérifie si un utilisateur est suivi par un autre utilisateur.
+     */
+    public function isFollowedBy(User $user)
+    {
+        return $this->followers()->where('follower_id', $user->id)->exists();
+    }
+
+    /**
+     * Vérifie si un utilisateur a envoyé une demande de suivi.
+     */
+    public function hasRequestedToFollow(User $user)
+    {
+        return $this->pendingFollowers()->where('follower_id', $user->id)->exists();
     }
 }

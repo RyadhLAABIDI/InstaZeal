@@ -12,10 +12,10 @@ class Post extends Model
 
     protected $fillable = [
         'user_id',
-        'title',     // Texte du post
-        'media',   // Image ou vidéo
-        'media_type',  // "image" ou "video"
-        'visibility',  // public, privé, amis seulement, etc.
+        'title',
+        'media',
+        'media_type',
+        'visibility',
     ];
 
     protected $dates = ['deleted_at'];
