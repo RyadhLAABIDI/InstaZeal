@@ -11,13 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('account_recovery_tokens', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('token')->unique();
-            $table->timestamp('expires_at');
-            $table->timestamps();
-        });
+        // Vérifie si la table n'existe pas déjà avant de la créer
+        if (!Schema::hasTable('account_recovery_tokens')) {
+            Schema::create('account_recovery_tokens', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id'); 
+                $table->string('token')->unique();
+                $table->timestamp('expires_at');
+                $table->timestamps();
+
+                // Clé étrangère avec suppression en cascade
+                $table->foreign('user_id')
+                      ->references('id')
+                      ->on('users')
+                      ->onDelete('cascade');
+            });
+        }
     }
 
     /**

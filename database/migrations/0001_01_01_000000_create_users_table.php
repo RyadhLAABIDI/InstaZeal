@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Créer la table 'users'
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('first_name'); // Prénom
@@ -28,12 +29,14 @@ return new class extends Migration
             $table->softDeletes(); // Suppression douce
         });
 
+        // Créer la table 'password_reset_tokens' pour la réinitialisation des mots de passe
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
+        // Créer la table 'sessions' pour gérer les sessions des utilisateurs
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -50,6 +53,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('users');
+        //Schema::dropIfExists('follows');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
     }

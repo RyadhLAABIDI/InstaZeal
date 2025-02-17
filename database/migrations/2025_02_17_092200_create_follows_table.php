@@ -13,10 +13,13 @@ return new class extends Migration
     {
         Schema::create('follows', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id'); 
             $table->foreignId('follower_id')->constrained('users')->onDelete('cascade'); // Lien avec l'utilisateur qui suit
             $table->foreignId('followed_id')->constrained('users')->onDelete('cascade'); // Lien avec l'utilisateur suivi
             $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending'); // Statut de l'abonnement
+            $table->enum('relationship', ['friend', 'close_friend'])->nullable(); // Nouveau champ pour gérer les relations d'amis proches
             $table->timestamps();
+            $table->softDeletes(); // Suppression douce pour gérer les abonnements supprimés
         });
     }
 

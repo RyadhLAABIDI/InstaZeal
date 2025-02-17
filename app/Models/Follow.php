@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -13,6 +12,7 @@ class Follow extends Model
         'follower_id',
         'followed_id',
         'status',
+        'relationship', // Ajout du champ relationship
     ];
 
     /**
@@ -29,5 +29,13 @@ class Follow extends Model
     public function followed()
     {
         return $this->belongsTo(User::class, 'followed_id');
+    }
+
+    /**
+     * Vérifie si la relation est un ami proche.
+     */
+    public function isCloseFriend()
+    {
+        return $this->relationship === 'close_friend';
     }
 }

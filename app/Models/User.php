@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -41,9 +40,10 @@ class User extends Authenticatable
      * Un utilisateur peut avoir plusieurs posts.
      */
     public function posts()
-    {
-        return $this->hasMany(Post::class);
-    }
+{
+    return $this->hasMany(Post::class, 'user_id');
+}
+
 
     /**
      * Un utilisateur peut aimer plusieurs posts.
@@ -94,6 +94,17 @@ class User extends Authenticatable
     }
 
     /**
+     * Un utilisateur peut avoir plusieurs amis proches.
+     */
+    public function closeFriends()
+    {
+        // Utilisation du scope pour filtrer les amis proches (close_friend)
+        return $this->hasMany(Follow::class, 'followed_id')
+            ->where('relationship', 'close_friend')  // Filtrage des amis proches
+            ->where('status', 'accepted');
+    }
+
+    /**
      * Vérifie si un utilisateur est suivi par un autre utilisateur.
      */
     public function isFollowedBy(User $user)
@@ -107,5 +118,13 @@ class User extends Authenticatable
     public function hasRequestedToFollow(User $user)
     {
         return $this->pendingFollowers()->where('follower_id', $user->id)->exists();
+    }
+
+    /**
+     * Vérifie si un utilisateur est ami proche.
+     */
+    public function isCloseFriend(User $user)
+    {
+        return $this->closeFriends()->where('follower_id', $user->id)->exists();
     }
 }
