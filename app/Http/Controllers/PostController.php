@@ -5,53 +5,84 @@ namespace App\Http\Controllers;
 use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 class PostController extends Controller
 {
-    /**
-     * Récupérer tous les posts de l'utilisateur connecté.
-     */
     public function getUserPosts()
     {
-        $posts = Post::where('user_id', Auth::id())
-            ->with(['user', 'comments', 'comments.user', 'likes', 'shares'])
-            ->get();
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['error' => 'Non authentifié'], 401);
+            }
 
-        return response()->json($posts);
+            $posts = Post::where('user_id', $user->id)
+                ->with(['user:id,first_name,last_name,profile_image'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json($posts);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur récupération posts : ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur interne'], 500);
+        }
     }
 
-    /**
-     * Créer un nouveau post.
-     */
     public function createPost(Request $request)
     {
         $request->validate([
-            'title' => 'nullable|string',
-            'media' => 'nullable|string',
+            'title' => 'nullable|string|max:2200',
+            'media' => 'required|file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
             'media_type' => 'required|in:image,video',
-            'visibility' => 'required|in:public,private,friends,close_friends',
+            'visibility' => 'required|in:public,private,friends,close_friends'
         ]);
 
-        $post = Post::create([
-            'user_id' => Auth::id(),
-            'title' => $request->title,
-            'media' => $request->media,
-            'media_type' => $request->media_type,
-            'visibility' => $request->visibility,
-        ]);
+        try {
+            $file = $request->file('media');
+            $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('posts', $filename, 'public');
 
-        return response()->json(['message' => 'Post créé avec succès.', 'post' => $post]);
+            $post = Auth::user()->posts()->create([
+                'title' => $request->title,
+                'media' => $path,
+                'media_type' => $request->media_type,
+                'visibility' => $request->visibility
+            ]);
+
+            return response()->json([
+                'message' => 'Post créé avec succès',
+                'post' => $post->load('user:id,first_name,last_name,profile_image')
+            ], 201);
+
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            Log::error('Erreur création post : ' . $e->getMessage());
+            return response()->json(['message' => 'Erreur interne du serveur'], 500);
+        }
     }
 
-    /**
-     * Récupérer un post spécifique par son ID.
-     */
     public function getPost($postId)
     {
-        $post = Post::with(['user', 'comments', 'comments.user', 'likes', 'shares'])->findOrFail($postId);
+        try {
+            $post = Post::with([
+                'user:id,first_name,last_name,profile_image',
+                'comments.user:id,first_name,last_name',
+                'likes.user:id,first_name,last_name',
+                'shares.user:id,first_name,last_name'
+            ])->findOrFail($postId);
 
-        return response()->json($post);
+            return response()->json($post);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Post non trouvé'], 404);
+        }
     }
+
 
     /**
      * Mettre à jour un post spécifique.

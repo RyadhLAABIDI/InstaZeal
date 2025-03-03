@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,10 +41,9 @@ class User extends Authenticatable
      * Un utilisateur peut avoir plusieurs posts.
      */
     public function posts()
-{
-    return $this->hasMany(Post::class, 'user_id');
-}
-
+    {
+        return $this->hasMany(Post::class, 'user_id');
+    }
 
     /**
      * Un utilisateur peut aimer plusieurs posts.

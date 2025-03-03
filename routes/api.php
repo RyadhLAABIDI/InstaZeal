@@ -70,11 +70,11 @@ Route::get('/', function () {
 Route::middleware('auth:sanctum')->group(function () {
 
     // Récupérer tous les posts de l'utilisateur connecté
-    Route::get('posts/user', [PostController::class, 'getUserPosts']);
+    Route::get('posts/user', [PostController::class, 'getUserPosts'])->middleware('auth:sanctum');
     // Commentaire : Cette route permet à un utilisateur connecté de récupérer tous ses posts.
 
     // Créer un nouveau post
-    Route::post('posts', [PostController::class, 'createPost']);
+    Route::post('posts', [PostController::class, 'createPost'])->middleware('auth:sanctum');
     // Commentaire : Cette route permet à un utilisateur connecté de créer un nouveau post.
 
     // Récupérer un post spécifique par son ID
