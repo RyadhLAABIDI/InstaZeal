@@ -9,6 +9,7 @@ use App\Http\Controllers\ShareController;
 use App\Http\Controllers\CommentController;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\FollowController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Http\Request;
 
 /*
@@ -88,6 +89,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Supprimer un post
     Route::delete('posts/{postId}', [PostController::class, 'deletePost']);
     // Commentaire : Cette route permet de supprimer un post spécifique. L'utilisateur doit être l'auteur du post.
+    
+    // Route pour récupérer le nombre de posts d'un utilisateur
+    Route::get('user/{userId}/posts/count', [PostController::class, 'getPostsCount']);
+
+    // Afficher les postes d'un autre utilisateur
+    Route::get('/user/{userId}/posts', [PostController::class, 'getPostsByUser']);
 
     // Récupérer tous les posts visibles selon la visibilité définie (public, private, friends, close_friends)
     Route::get('posts', [PostController::class, 'index']);
@@ -109,9 +116,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('follow/{followedId}', [FollowController::class, 'followUser']);
     // Commentaire : Permet à un utilisateur de suivre un autre utilisateur avec option de relation.
 
-    // Accepter ou refuser une demande de suivi
-    Route::put('follow/status/{followId}', [FollowController::class, 'updateFollowStatus']);
-    // Commentaire : Permet d'accepter ou de refuser une demande de suivi par l'utilisateur suivi.
+   
+    // Routes pour Vérifie si un utilisateur suit un autre utilisateur de manière mutuelle.
+   Route::get('/is-mutual-following/{followedId}', [FollowController::class, 'isMutualFollowing']);
+
 
     // Modifier la relation entre un utilisateur et un autre (ami ou ami proche)
     Route::put('follow/relationship/{followId}', [FollowController::class, 'updateRelationship']);
@@ -139,22 +147,25 @@ Route::middleware('auth:sanctum')->group(function () {
 // Routes protégées par authentification pour la gestion des likes
 Route::middleware('auth:sanctum')->group(function () {
     // Récupérer la liste des utilisateurs ayant liké un post spécifique
-    Route::get('post/{postId}/likes', [LikeController::class, 'showLikesForPost']);
+    Route::get('post/{postId}/likes', [LikeController::class, 'showLikesForPost'])->middleware('auth:sanctum');
     
     // Récupérer la liste des posts likés par un utilisateur spécifique
-    Route::get('user/{userId}/likes', [LikeController::class, 'showLikesForUser']);
+    Route::get('user/{userId}/likes', [LikeController::class, 'showLikesForUser'])->middleware('auth:sanctum');
     
     // Liker un post spécifique
-    Route::post('post/{postId}/like', [LikeController::class, 'likePost']);
+    Route::post('post/{postId}/like', [LikeController::class, 'likePost'])->middleware('auth:sanctum');
     
     // Retirer un like sur un post spécifique
-    Route::delete('post/{postId}/unlike', [LikeController::class, 'unlikePost']);
+    Route::delete('post/{postId}/unlike', [LikeController::class, 'unlikePost'])->middleware('auth:sanctum');
     
     // Vérifier si un utilisateur a liké un post spécifique
-    Route::get('post/{postId}/has-liked', [LikeController::class, 'hasLikedPost']);
+    Route::get('post/{postId}/has-liked', [LikeController::class, 'hasLikedPost'])->middleware('auth:sanctum');
     
     // Récupérer le nombre total de likes d'un post spécifique
-    Route::get('post/{postId}/like-count', [LikeController::class, 'getLikeCount']);
+    Route::get('post/{postId}/like-count', [LikeController::class, 'getLikeCount'])->middleware('auth:sanctum');
+
+    Route::get('/posts/{postId}/likers', [LikeController::class, 'getPostLikers'])->middleware('auth:sanctum');
+
 });
 
 /*
@@ -196,35 +207,62 @@ Route::middleware('auth:sanctum')->group(function () {
 // Routes protégées par authentification pour la gestion des commentaires
 Route::middleware('auth:sanctum')->group(function () {
     // Récupérer les commentaires d'un post
-    Route::get('posts/{postId}/comments', [CommentController::class, 'getComments']);
+    Route::get('posts/{postId}/comments', [CommentController::class, 'getComments'])->middleware('auth:sanctum');
+
+
+    Route::get('posts/{postId}/comments/parent', [CommentController::class, 'getParentComments'])->middleware('auth:sanctum');
     
     // Ajouter un commentaire à un post
-    Route::post('posts/{postId}/comments', [CommentController::class, 'addComment']);
+    Route::post('posts/{postId}/comments', [CommentController::class, 'addComment'])->middleware('auth:sanctum');
     
     // Répondre à un commentaire
-    Route::post('comments/{commentId}/reply', [CommentController::class, 'replyToComment']);
+    Route::post('comments/{commentId}/reply', [CommentController::class, 'replyToComment'])->middleware('auth:sanctum');
     
     // Supprimer un commentaire
-    Route::delete('comments/{commentId}', [CommentController::class, 'deleteComment']);
+    Route::delete('comments/{commentId}', [CommentController::class, 'deleteComment'])->middleware('auth:sanctum');
+
+
+    Route::post('comments/restore/{commentId}', [CommentController::class, 'restoreComment'])->middleware('auth:sanctum');
     
     // Liker un commentaire
-    Route::post('comments/{commentId}/like', [CommentController::class, 'likeComment']);
+    Route::post('comments/{commentId}/like', [CommentController::class, 'likeComment'])->middleware('auth:sanctum');
     
     // Annuler un like sur un commentaire
-    Route::delete('comments/{commentId}/unlike', [CommentController::class, 'unlikeComment']);
+    Route::delete('comments/{commentId}/unlike', [CommentController::class, 'unlikeComment'])->middleware('auth:sanctum');
     
     // Vérifier si un utilisateur a liké un commentaire
-    Route::get('comments/{commentId}/has-liked', [CommentController::class, 'hasLikedComment']);
+    Route::get('comments/{commentId}/has-liked', [CommentController::class, 'hasLikedComment'])->middleware('auth:sanctum');
     
     // Récupérer le nombre de likes d'un commentaire
-    Route::get('comments/{commentId}/like-count', [CommentController::class, 'getLikeCount']);
+    Route::get('comments/{commentId}/like-count', [CommentController::class, 'getLikeCount'])->middleware('auth:sanctum');
 });
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Notification Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware('auth:sanctum')->get('/follow-requests', [NotificationController::class, 'getFollowRequests']);
+
+
+  // Accepter ou refuser une demande de suivi
+  Route::middleware('auth:sanctum')->put('/status/{followId}', [NotificationController::class, 'updateFollowStatus']);
+
+  // Commentaire : Permet d'accepter ou de refuser une demande de suivi par l'utilisateur suivi.
+
 
 /*
 |--------------------------------------------------------------------------
 | User Route
 |--------------------------------------------------------------------------
 */
+
+// Route permets à un utilisateur de mettre à jour la visibilité de son compte (privé ou public)
+Route::middleware('auth:sanctum')->put('/user/privacy', [UserController::class, 'updateAccountPrivacy']);
+Route::middleware('auth:sanctum')->get('/user/privacy', [UserController::class, 'getAccountPrivacy']); // Nouvelle route
 
 // Route protégée pour récupérer l'utilisateur connecté
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {

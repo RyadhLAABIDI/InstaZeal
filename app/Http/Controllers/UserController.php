@@ -212,4 +212,60 @@ public function getEmail(Request $request)
     ]);
 }
 
+
+    // Méthode pour mettre à jour la confidentialité
+    public function updateAccountPrivacy(Request $request)
+    {
+        try {
+            // 1. Récupération de l'utilisateur
+            $user = Auth::user();
+            
+            // 2. Vérification de l'authentification
+            if (!$user) {
+                return response()->json(['error' => 'Non authentifié'], 401);
+            }
+
+            // 3. Validation de la requête
+            $request->validate([
+                'is_private' => 'required|boolean',
+            ]);
+
+            // 4. Mise à jour et sauvegarde
+            $user->is_private = $request->input('is_private');
+            $user->save(); // Sauvegarde explicite
+
+            // 5. Réponse JSON
+            return response()->json([
+                'message' => $user->is_private 
+                    ? 'Compte privé activé avec succès' 
+                    : 'Compte public activé avec succès',
+                'is_private' => $user->is_private
+            ]);
+
+        } catch (\Exception $e) {
+            // 6. Gestion des erreurs
+            Log::error('Erreur mise à jour confidentialité : ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur interne du serveur'], 500);
+        }
+    }
+
+    // Méthode pour récupérer le statut actuel
+    public function getAccountPrivacy(Request $request)
+    {
+        try {
+            // 1. Récupération de l'utilisateur
+            $user = Auth::user();
+            
+            // 2. Retour du statut actuel
+            return response()->json([
+                'is_private' => $user->is_private
+            ]);
+
+        } catch (\Exception $e) {
+            // 3. Gestion des erreurs
+            Log::error('Erreur récupération confidentialité : ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur interne du serveur'], 500);
+        }
+    }
 }
+

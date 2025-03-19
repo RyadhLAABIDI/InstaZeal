@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -37,5 +38,25 @@ class Follow extends Model
     public function isCloseFriend()
     {
         return $this->relationship === 'close_friend';
+    }
+
+    /**
+     * Vérifie si l'utilisateur $userId suit $followedId et vice-versa.
+     */
+    public static function isMutualFollow(int $userId, int $followedId)
+    {
+        // Vérifie si l'utilisateur $userId suit $followedId
+        $userFollows = Follow::where('follower_id', $userId)
+            ->where('followed_id', $followedId)
+            ->where('status', 'accepted')
+            ->exists();
+
+        // Vérifie si $followedId suit $userId
+        $followedFollows = Follow::where('follower_id', $followedId)
+            ->where('followed_id', $userId)
+            ->where('status', 'accepted')
+            ->exists();
+
+        return $userFollows && $followedFollows;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -84,29 +85,28 @@ class PostController extends Controller
     }
 
 
-    /**
-     * Mettre à jour un post spécifique.
-     */
-    public function updatePost(Request $request, $postId)
-    {
-        $post = Post::findOrFail($postId);
+   /**
+ * Mettre à jour uniquement la visibilité d'un post spécifique.
+ */
+public function updatePost(Request $request, $postId)
+{
+    $post = Post::findOrFail($postId);
 
-        // Vérification si l'utilisateur est l'auteur du post
-        if ($post->user_id !== Auth::id()) {
-            return response()->json(['message' => 'Action non autorisée.'], 403);
-        }
-
-        $request->validate([
-            'title' => 'nullable|string',
-            'media' => 'nullable|string',
-            'media_type' => 'nullable|in:image,video',
-            'visibility' => 'nullable|in:public,private,friends,close_friends',
-        ]);
-
-        $post->update($request->only('title', 'media', 'media_type', 'visibility'));
-
-        return response()->json(['message' => 'Post mis à jour avec succès.', 'post' => $post]);
+    // Vérification si l'utilisateur est l'auteur du post
+    if ($post->user_id !== Auth::id()) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
     }
+
+    // Validation : uniquement la visibilité peut être mise à jour
+    $request->validate([
+        'visibility' => 'required|in:public,private,friends,close_friends',
+    ]);
+
+    // Mise à jour de la visibilité uniquement
+    $post->update(['visibility' => $request->visibility]);
+
+    return response()->json(['message' => 'Visibilité mise à jour avec succès.', 'post' => $post]);
+}
 
     /**
      * Supprimer un post.
@@ -157,4 +157,61 @@ class PostController extends Controller
 
         return response()->json(['posts' => $posts]);
     }
-}
+
+    public function getPostsCount($userId)
+    {
+        // Vérifiez que l'utilisateur existe
+        $user = User::find($userId);
+
+        if ($user) {
+            // Comptez le nombre de posts de cet utilisateur
+            $postsCount = Post::where('user_id', $userId)->count();
+            return response()->json([
+                'count' => $postsCount
+            ]);
+        } else {
+            return response()->json(['error' => 'Utilisateur non trouvé'], 404);
+        }
+    }
+
+     /**
+     * Récupérer les posts d'un autre utilisateur en fonction de la visibilité
+     */
+    public function getPostsByUser($userId)
+    {
+        try {
+            $user = Auth::user(); // L'utilisateur connecté
+            if (!$user) {
+                return response()->json(['error' => 'Non authentifié'], 401);
+            }
+    
+            // Vérifie si l'utilisateur connecté peut accéder aux posts de l'autre utilisateur
+            $targetUser = User::find($userId);
+    
+            if (!$targetUser) {
+                return response()->json(['error' => 'Utilisateur introuvable'], 404);
+            }
+    
+            // Récupère les posts de l'utilisateur cible
+            $posts = Post::where('user_id', $targetUser->id)
+                ->with(['user:id,first_name,last_name,profile_image'])
+                ->orderBy('created_at', 'desc')
+                ->get();
+    
+            // Filtrer les posts selon leur visibilité
+            $visiblePosts = $posts->filter(function ($post) use ($user) {
+                return $post->isVisibleTo($user); // Vérifie la visibilité pour l'utilisateur connecté
+            });
+    
+            if ($visiblePosts->isEmpty()) {
+                return response()->json(['message' => 'Aucun post visible pour cet utilisateur'], 404);
+            }
+    
+            return response()->json($visiblePosts);
+    
+        } catch (\Exception $e) {
+            Log::error('Erreur récupération posts : ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur interne'], 500);
+        }
+    }
+}    

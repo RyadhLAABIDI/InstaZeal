@@ -13,12 +13,20 @@ class CommentController extends Controller
      */
     public function getComments($postId)
     {
-        $comments = Comment::where('post_id', $postId)
+        $comments = Comment::with(['user', 'replies.user', 'replies.likes', 'likes'])
+            ->where('post_id', $postId)
             ->whereNull('parent_id')
-            ->with(['user', 'replies.user', 'likes', 'likesCount'])
+            ->withCount('likes as likes_count') // Ajouter pour les parents
             ->get();
-
-        return response()->json($comments);
+    
+        // Ajouter le compteur de likes pour les réponses
+        $comments->each(function ($comment) {
+            $comment->replies->each(function ($reply) {
+                $reply->loadCount('likes as likes_count');
+            });
+        });
+    
+        return $comments;
     }
 
     /**
@@ -47,19 +55,26 @@ class CommentController extends Controller
         $request->validate([
             'content' => 'required|string',
         ]);
-
+    
         $parentComment = Comment::findOrFail($commentId);
-
+    
+        // Créer la réponse
         $reply = Comment::create([
             'user_id' => Auth::id(),
             'post_id' => $parentComment->post_id,
             'content' => $request->content,
             'parent_id' => $commentId,
         ]);
-
-        return response()->json(['message' => 'Réponse ajoutée avec succès.', 'reply' => $reply]);
-    }
-
+    
+        // Vous pouvez renvoyer la liste mise à jour des réponses du parent après l'ajout
+        $parentComment->load(['replies.user', 'replies.likes']); // Charger les relations
+    return response()->json([
+        'message' => 'Réponse ajoutée avec succès.',
+        'reply' => $reply->load('user'), // Charger l'utilisateur de la réponse
+        'replies' => $parentComment->replies
+    ]);
+}
+    
     /**
      * Supprimer un commentaire (et ses réponses).
      */
@@ -119,4 +134,36 @@ class CommentController extends Controller
 
         return response()->json(['like_count' => $likeCount]);
     }
+
+    /**
+     * Récupérer les commentaires principaux (parent) d'un post spécifique.
+     */
+    public function getParentComments($postId)
+    {
+        // Récupère les commentaires du post, où parent_id est null (commentaires principaux)
+        $comments = Comment::where('post_id', $postId)
+            ->whereNull('parent_id')  // Filtrer les commentaires sans parent (parents)
+            ->with('user')  // Inclure les informations de l'utilisateur qui a commenté
+            ->get();
+
+        return response()->json($comments);
+    }
+
+
+
+    public function restoreComment($commentId)
+{
+    $comment = Comment::withTrashed()->findOrFail($commentId);  // This will fetch soft deleted comments
+
+    if ($comment->user_id !== Auth::id()) {
+        return response()->json(['message' => 'Action non autorisée.'], 403);
+    }
+
+    $comment->restore();  // Restore the soft deleted comment
+
+    return response()->json(['message' => 'Commentaire restauré avec succès.']);
 }
+
+}
+
+

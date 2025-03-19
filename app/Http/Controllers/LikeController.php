@@ -77,4 +77,29 @@ class LikeController extends Controller
         $likeCount = Like::where('post_id', $postId)->count();
         return response()->json(['like_count' => $likeCount]);
     }
+
+
+
+         /**
+         * Récupérer la liste des utilisateurs qui ont liké un post.
+         */
+        public function getPostLikers($postId)
+        {
+            $likers = Like::where('post_id', $postId)
+                ->join('users', 'likes.user_id', '=', 'users.id')
+                ->select(
+                    'users.id',  // ✅ Ajouter l'ID utilisateur
+                    'users.first_name',
+                    'users.last_name',
+                    'users.profile_image'
+                )
+                ->get();
+        
+            return response()->json(['likers' => $likers]);
+        }
+        
+
+
+
+
 }

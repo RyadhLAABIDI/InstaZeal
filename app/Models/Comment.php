@@ -36,7 +36,7 @@ class Comment extends Model
      */
     public function replies()
     {
-        return $this->hasMany(Comment::class, 'parent_id')->cascadeOnDelete();
+        return $this->hasMany(Comment::class, 'parent_id');
     }
 
     /**
@@ -52,16 +52,12 @@ class Comment extends Model
      */
     public function likes()
     {
-        return $this->hasMany(CommentLike::class);
+        return $this->hasMany(CommentLike::class)->with('user');
     }
 
-    /**
-     * Nombre de likes d'un commentaire.
-     */
-    public function likesCount()
+    // Accesseur pour obtenir le nombre de likes d'un commentaire
+    public function getLikesCountAttribute()
     {
-        return $this->hasMany(CommentLike::class)
-                    ->selectRaw('comment_id, count(*) as count')
-                    ->groupBy('comment_id');
+        return $this->likes()->count();
     }
 }
