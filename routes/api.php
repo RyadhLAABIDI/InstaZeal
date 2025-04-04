@@ -18,8 +18,15 @@ use Illuminate\Http\Request;
 |--------------------------------------------------------------------------
 */
 
-// Route pour l'inscription
+/// Route pour l'inscription (création d'un nouveau compte utilisateur)
 Route::post('register', [AuthController::class, 'register']);
+
+// Route protégée par le middleware 'auth:sanctum', qui permet de récupérer la liste des catégories disponibles
+Route::middleware('auth:sanctum')->get('/categories', [AuthController::class, 'getCategories']);
+
+// Route protégée par le middleware 'auth:sanctum', qui permet à l'utilisateur de choisir ses catégories préférées
+Route::middleware('auth:sanctum')->post('/choose-categories', [AuthController::class, 'chooseCategories']);
+
 
 // Route pour la connexion
 Route::post('login', [AuthController::class, 'login'])->name('login');
@@ -45,10 +52,17 @@ Route::middleware('auth:sanctum')->get('/getemail', [UserController::class, 'get
 // Supprimer le compte
 Route::middleware('auth:sanctum')->delete('/delete-account', [UserController::class, 'deleteAccount']);
 
-// Route pour récupération de compte
+// Route pour envoyer un email de récupération de compte (avec un lien pour réinitialiser le mot de passe)
 Route::post('recover/send-email', [AccountRecoveryController::class, 'sendRecoveryEmail']);
+
+// Route pour afficher le formulaire de récupération de compte avec un token de réinitialisation du mot de passe
 Route::get('recover/{token}', [AccountRecoveryController::class, 'showRecoveryForm']);
+
+// Route pour traiter la récupération du compte (réinitialisation du mot de passe avec le token)
 Route::post('recover', [AccountRecoveryController::class, 'recoverAccount']);
+
+
+
 
 /*
 |--------------------------------------------------------------------------
@@ -116,11 +130,31 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('follow/{followedId}', [FollowController::class, 'followUser']);
     // Commentaire : Permet à un utilisateur de suivre un autre utilisateur avec option de relation.
 
+    Route::post('/follow', [FollowController::class, 'followBack']);
    
-    // Routes pour Vérifie si un utilisateur suit un autre utilisateur de manière mutuelle.
-   Route::get('/is-mutual-following/{followedId}', [FollowController::class, 'isMutualFollowing']);
+    
+// Route pour accepter une demande de suivi
+Route::post('/follow-requests/{followId}/accept', [FollowController::class, 'acceptFollowRequest'])
+->name('follow.accept');
 
+ // Route pour refuser une demande de suivi
+ Route::delete('/follows/{followid}/reject', [FollowController::class, 'rejectFollowRequest'])
+ ->name('follow.reject');
+ 
 
+ Route::middleware('auth:sanctum')->get('/is-followed-by/{userId}', [FollowController::class, 'isFollowedBy']);
+
+ Route::get('/pending-follows', [FollowController::class, 'getPendingFollows']);
+ Route::get('/following', [FollowController::class, 'getFollowing']);
+ Route::get('/outgoing-follow_requests', [FollowController::class, 'getOutgoingFollowRequests']);
+ Route::get('/is-mutual-follow/{userId}', [FollowController::class, 'isMutualFollow']);
+ Route::get('/getfollowers', [FollowController::class, 'getFollowerss']);
+ Route::get('/getfollowing', [FollowController::class, 'getFollowingg']);
+ // Followers search
+ Route::get('/followers/search', [FollowController::class, 'searchFollowers']);  
+ // Following search
+ Route::get('/following/search', [FollowController::class, 'searchFollowing']);
+ 
     // Modifier la relation entre un utilisateur et un autre (ami ou ami proche)
     Route::put('follow/relationship/{followId}', [FollowController::class, 'updateRelationship']);
     // Commentaire : Permet de modifier la relation (ami, ami proche) après acceptation de l'abonnement.
@@ -136,6 +170,14 @@ Route::middleware('auth:sanctum')->group(function () {
     // Récupérer les abonnés
     Route::get('followers', [FollowController::class, 'getFollowers']);
     // Commentaire : Permet de récupérer tous les abonnés de l'utilisateur connecté.
+
+
+    Route::get('/follow-status/{user}', [FollowController::class, 'getFollowStatus']);
+
+
+    
+    
+
 });
 
 /*
@@ -248,10 +290,11 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->get('/follow-requests', [NotificationController::class, 'getFollowRequests']);
 
 
-  // Accepter ou refuser une demande de suivi
-  Route::middleware('auth:sanctum')->put('/status/{followId}', [NotificationController::class, 'updateFollowStatus']);
-
+Route::middleware('auth:sanctum')->put('/follow/status/{follow}', [FollowController::class, 'updateFollowStatus']);
   // Commentaire : Permet d'accepter ou de refuser une demande de suivi par l'utilisateur suivi.
+
+  Route::post('/create-mutual-notification', [NotificationController::class, 'createMutualNotification'])
+    ->middleware('auth:sanctum');
 
 
 /*

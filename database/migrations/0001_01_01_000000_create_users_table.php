@@ -6,37 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Créer la table 'users'
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('first_name'); // Prénom
-            $table->string('last_name');  // Nom
+            $table->string('first_name');
+            $table->string('last_name');
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->date('date_of_birth'); // Date de naissance
-            $table->enum('gender', ['male', 'female']); // Sexe
-            $table->text('bio')->nullable();   // Bio de l'utilisateur
-            $table->string('profile_image')->nullable(); // Image de profil
-            $table->boolean('is_private')->default(false); // ⚡ Nouveau champ : compte privé ou public
+            $table->date('date_of_birth');
+            $table->enum('gender', ['male', 'female']);
+            $table->text('bio')->nullable();
+            $table->string('profile_image')->nullable();
+            $table->boolean('is_private')->default(false);
             $table->rememberToken();
             $table->timestamps();
-            $table->softDeletes(); // Suppression douce
+            $table->softDeletes();
         });
 
-        // Créer la table 'password_reset_tokens' pour la réinitialisation des mots de passe
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
-        // Créer la table 'sessions' pour gérer les sessions des utilisateurs
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -47,14 +41,16 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        //Schema::dropIfExists('follows');
-        Schema::dropIfExists('password_reset_tokens');
+        // Désactiver temporairement les contraintes FK
+        Schema::disableForeignKeyConstraints();
+        
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
+        
+        // Réactiver les contraintes
+        Schema::enableForeignKeyConstraints();
     }
 };

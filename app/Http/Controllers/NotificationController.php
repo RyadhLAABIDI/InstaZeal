@@ -23,29 +23,4 @@ class NotificationController extends Controller
     // Retourne les demandes filtrées dans une réponse JSON
     return response()->json($followRequests);
 }
-
-
-    public function updateFollowStatus(Request $request, $followId)
-    {
-        $request->validate([
-            'status' => 'required|in:accepted,rejected',
-        ]);
-
-        $follow = Follow::findOrFail($followId);
-
-        if ($follow->followed_id !== Auth::id()) {
-            return response()->json(['message' => 'Action non autorisée.'], 403);
-        }
-
-        // NE PLUS vérifier le statut précédent
-        $follow->status = $request->status;
-        $follow->save();
-
-        DeleteFollowRequest::dispatch($follow->id)->delay(now()->addDays(20));
-
-        return response()->json([
-            'message' => 'Demande d\'abonnement ' . $request->status . '.',
-            'follow' => $follow
-        ]);
-    }
 }

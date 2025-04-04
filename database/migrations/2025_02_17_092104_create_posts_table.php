@@ -14,13 +14,13 @@ return new class extends Migration
             $table->string('title')->nullable(); // Titre du post
             $table->string('media')->nullable(); // Image ou vidéo
             $table->enum('media_type', ['image', 'video']); // Type de média (image ou vidéo)
-            $table->enum('visibility', ['public', 'private', 'friends', 'close_friends'])->default('public'); // Visibilité du post (ajout de 'close_friends')
+            $table->enum('visibility', ['public', 'private', 'friends', 'close_friends'])->default('public'); // Visibilité du post
+            $table->string('categorie')->nullable(); // Ajout du champ categorie
             $table->timestamps();
             $table->softDeletes(); // Suppression douce
 
-
             // Définition de la clé étrangère
-        $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
         });
     }
 

@@ -98,10 +98,17 @@ class User extends Authenticatable
      */
     public function closeFriends()
     {
-        // Utilisation du scope pour filtrer les amis proches (close_friend)
         return $this->hasMany(Follow::class, 'followed_id')
-            ->where('relationship', 'close_friend')  // Filtrage des amis proches
+            ->where('relationship', 'close_friend')
             ->where('status', 'accepted');
+    }
+
+    /**
+     * Un utilisateur peut avoir plusieurs catégories préférées.
+     */
+    public function categories()
+    {
+        return $this->belongsToMany(Categorie::class, 'categorie_user');
     }
 
     /**
@@ -126,5 +133,23 @@ class User extends Authenticatable
     public function isCloseFriend(User $user)
     {
         return $this->closeFriends()->where('follower_id', $user->id)->exists();
+    }
+
+    /**
+     * Un utilisateur peut avoir plusieurs demandes d'abonnement en attente envoyées.
+     */
+    public function pendingFollowing()
+    {
+        return $this->hasMany(Follow::class, 'follower_id')
+            ->where('status', 'pending')
+            ->with(['followed' => function($query) {
+                $query->select(
+                    'id', 
+                    'first_name', 
+                    'last_name', 
+                    'profile_image', 
+                    'is_private'
+                );
+            }]);
     }
 }

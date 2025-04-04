@@ -56,7 +56,6 @@ class AccountRecoveryController extends Controller
         return view('auth.recover', ['token' => $token]);
     }
 
-    // Récupérer le compte de l'utilisateur
    // Récupérer le compte de l'utilisateur
 public function recoverAccount(Request $request)
 {
@@ -101,5 +100,5 @@ public function recoverAccount(Request $request)
 
     return response()->json(['message' => 'Account recovered successfully.']);
 }
-
 }
+

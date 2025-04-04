@@ -6,28 +6,30 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('follows', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id'); 
-            $table->foreignId('follower_id')->constrained('users')->onDelete('cascade'); // Lien avec l'utilisateur qui suit
-            $table->foreignId('followed_id')->constrained('users')->onDelete('cascade'); // Lien avec l'utilisateur suivi
-            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending'); // Statut de l'abonnement
-            $table->enum('relationship', ['friend', 'close_friend'])->nullable(); // Nouveau champ pour gérer les relations d'amis proches
-            $table->timestamps();
-            $table->softDeletes(); // Suppression douce pour gérer les abonnements supprimés
-        });
+        if (!Schema::hasTable('follows')) {
+            Schema::create('follows', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('follower_id')->constrained('users')->onDelete('cascade');
+                $table->foreignId('followed_id')->constrained('users')->onDelete('cascade');
+                $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+                $table->enum('relationship', ['friend', 'close_friend'])->nullable();
+                $table->timestamps();
+                $table->softDeletes();
+            });
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('follows');
+        if (Schema::hasTable('follows')) { // ✅ Vérifie l'existence de la table
+            Schema::table('follows', function (Blueprint $table) {
+                // Supprime les clés étrangères si elles existent
+                $table->dropForeign(['follower_id']);
+                $table->dropForeign(['followed_id']);
+            });
+            Schema::dropIfExists('follows');
+        }
     }
 };

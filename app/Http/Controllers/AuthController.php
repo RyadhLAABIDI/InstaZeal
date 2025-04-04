@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\Categorie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
@@ -15,7 +16,6 @@ class AuthController extends Controller
    // Inscription
    public function register(Request $request)
    {
-       // Valider les données de la requête
        $request->validate([
            'first_name' => 'required|string|max:255',
            'last_name' => 'required|string|max:255',
@@ -25,14 +25,11 @@ class AuthController extends Controller
            'gender' => 'required|string',
        ]);
    
-       // Vérifier si l'email appartient à un utilisateur supprimé
        $existingUser = User::onlyTrashed()->where('email', $request->email)->first();
        if ($existingUser) {
-           // Si l'utilisateur existe dans la table "deleted_at", le réactiver
            $existingUser->restore();
            $user = $existingUser;
        } else {
-           // Si l'utilisateur n'existe pas, créer un nouveau compte
            $user = User::create([
                'first_name' => $request->first_name,
                'last_name' => $request->last_name,
@@ -43,15 +40,52 @@ class AuthController extends Controller
            ]);
        }
    
-       // Générer un token Sanctum pour l'utilisateur
        $token = $user->createToken('auth_token')->plainTextToken;
    
        return response()->json([
-           'message' => 'User registered successfully',
+           'message' => 'User registered successfully. Please choose your categories to complete registration.',
            'token' => $token,
-           'user' => $user // Ajout de l'utilisateur dans la réponse
+           'user' => $user,
+           'next_step' => 'choose-categories'
        ], 201);
    }
+
+
+   public function getCategories()
+{
+    $categories = Categorie::all(); // Récupère toutes les catégories (Sport, Éducation, etc.)
+
+    return response()->json([
+        'message' => 'Categories retrieved successfully',
+        'categories' => $categories
+    ], 200);
+}
+
+
+public function chooseCategories(Request $request)
+{
+    $request->validate([
+        'category_ids' => 'required|array',
+        'category_ids.*' => 'exists:categories,id' // Vérifie que chaque ID existe dans la table categories
+    ]);
+
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json([
+            'message' => 'Unauthorized'
+        ], 401);
+    }
+
+    $user->categories()->sync($request->category_ids);
+
+    return response()->json([
+        'message' => 'Categories selected successfully. Registration completed!',
+        'user' => $user->load('categories')
+    ], 200);
+}
+
+
    
     // Connexion
     public function login(Request $request)

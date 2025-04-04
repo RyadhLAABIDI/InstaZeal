@@ -16,6 +16,7 @@ class Post extends Model
         'media', // Stocke le chemin relatif (ex: 'posts/fichier.jpg')
         'media_type',
         'visibility',
+        'categorie', // Ajout du champ categorie
     ];
 
     protected $appends = ['media_url']; // Ajoute le champ calculé
