@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Création de la table 'users' si elle n'existe pas encore
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('first_name');
@@ -25,12 +26,21 @@ return new class extends Migration
             $table->softDeletes();
         });
 
+        // Ajout de la colonne 'registration_complete' après la colonne 'is_private'
+        Schema::table('users', function (Blueprint $table) {
+            $table->boolean('registration_complete')
+                  ->default(false)
+                  ->after('is_private'); // Ajouter la colonne après 'is_private'
+        });
+
+        // Création de la table 'password_reset_tokens'
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
             $table->timestamp('created_at')->nullable();
         });
 
+        // Création de la table 'sessions'
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
             $table->foreignId('user_id')->nullable()->index();
@@ -46,6 +56,7 @@ return new class extends Migration
         // Désactiver temporairement les contraintes FK
         Schema::disableForeignKeyConstraints();
         
+        // Supprimer les tables
         Schema::dropIfExists('sessions');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('users');

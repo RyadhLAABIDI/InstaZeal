@@ -14,6 +14,39 @@ class AuthController extends Controller
 {
     // Inscription
    // Inscription
+   public function login(Request $request)
+   {
+       $request->validate([
+           'email' => 'required|string|email|max:255',
+           'password' => 'required|string|min:8',
+       ]);
+   
+       if (!Auth::attempt($request->only('email', 'password'))) {
+           throw ValidationException::withMessages([
+               'email' => ['Invalid credentials'],
+           ]);
+       }
+   
+       $user = Auth::user();
+   
+       // Vérification de l'étape d'inscription
+       if (!$user->hasCompletedRegistration()) {
+           Auth::logout(); // Empêche la connexion
+           return response()->json([
+               'message' => 'Registration incomplete. Please complete category selection.',
+               'next_step' => 'choose-categories'
+           ], 403); // Code 403 Forbidden
+       }
+   
+       $token = $user->createToken('auth_token')->plainTextToken;
+   
+       return response()->json([
+           'message' => 'Login successful',
+           'token' => $token,
+           'user' => $user
+       ], 200);
+   }
+   
    public function register(Request $request)
    {
        $request->validate([
@@ -26,8 +59,10 @@ class AuthController extends Controller
        ]);
    
        $existingUser = User::onlyTrashed()->where('email', $request->email)->first();
+       
        if ($existingUser) {
            $existingUser->restore();
+           $existingUser->update(['registration_complete' => false]); // Réinitialisation
            $user = $existingUser;
        } else {
            $user = User::create([
@@ -37,6 +72,7 @@ class AuthController extends Controller
                'password' => Hash::make($request->password),
                'date_of_birth' => $request->date_of_birth,
                'gender' => $request->gender,
+               'registration_complete' => false // Inscription incomplète
            ]);
        }
    
@@ -49,8 +85,30 @@ class AuthController extends Controller
            'next_step' => 'choose-categories'
        ], 201);
    }
+   
+   public function chooseCategories(Request $request)
+   {
+       $request->validate([
+           'category_ids' => 'required|array',
+           'category_ids.*' => 'exists:categories,id'
+       ]);
+   
+       $user = $request->user();
+       
+       if (!$user) {
+           return response()->json(['message' => 'Unauthorized'], 401);
+       }
+   
+       $user->categories()->sync($request->category_ids);
+       $user->update(['registration_complete' => true]); // Finalisation
+   
+       return response()->json([
+           'message' => 'Registration completed!',
+           'user' => $user->load('categories')
+       ], 200);
+   }
 
-
+   
    public function getCategories()
 {
     $categories = Categorie::all(); // Récupère toutes les catégories (Sport, Éducation, etc.)
@@ -61,61 +119,6 @@ class AuthController extends Controller
     ], 200);
 }
 
-
-public function chooseCategories(Request $request)
-{
-    $request->validate([
-        'category_ids' => 'required|array',
-        'category_ids.*' => 'exists:categories,id' // Vérifie que chaque ID existe dans la table categories
-    ]);
-
-    $user = $request->user();
-
-    if (!$user) {
-        return response()->json([
-            'message' => 'Unauthorized'
-        ], 401);
-    }
-
-    $user->categories()->sync($request->category_ids);
-
-    return response()->json([
-        'message' => 'Categories selected successfully. Registration completed!',
-        'user' => $user->load('categories')
-    ], 200);
-}
-
-
-   
-    // Connexion
-    public function login(Request $request)
-{
-    // Validation des entrées
-    $request->validate([
-        'email' => 'required|string|email|max:255',
-        'password' => 'required|string|min:8',
-    ]);
-
-    // Tentative de connexion
-    if (!Auth::attempt($request->only('email', 'password'))) {
-        throw ValidationException::withMessages([
-            'email' => ['Invalid credentials'],
-        ]);
-    }
-
-    // Récupérer l'utilisateur authentifié
-    $user = Auth::user();
-
-    // Créer le token
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    // Renvoyer la réponse avec le token et les informations de l'utilisateur
-    return response()->json([
-        'message' => 'Login successful',
-        'token' => $token,
-        'user' => $user // Vous renvoyez l'utilisateur complet ici
-    ], 200);
-}
 
 
 

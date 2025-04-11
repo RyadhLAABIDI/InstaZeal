@@ -22,6 +22,7 @@ class User extends Authenticatable
         'bio',
         'profile_image',
         'is_private',
+        'registration_complete' // Nouveau champ ajouté
     ];
 
     protected $hidden = [
@@ -33,9 +34,19 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'date_of_birth' => 'date',
         'is_private' => 'boolean',
+        'registration_complete' => 'boolean' // Cast en booléen
     ];
 
     protected $dates = ['deleted_at'];
+
+    // Nouvelle méthode pour vérifier l'état d'inscription
+    public function hasCompletedRegistration()
+    {
+        return $this->registration_complete;
+    }
+
+
+   
 
     /**
      * Un utilisateur peut avoir plusieurs posts.
